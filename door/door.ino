@@ -1,6 +1,17 @@
 #include <ESP8266WiFi.h> 
 #include <PubSubClient.h>
 #include "globals.h"
+//GPIO
+const int button = 12;
+void ICACHE_RAM_ATTR door_changed ();
+//Millis
+unsigned long PREV_TIME = 0;
+const long DURATION = 5000;
+const long PERIOD = 10000;
+
+// Door state
+//True = Open, False = Closed
+bool door_state = false;
 
 //Wifi
 WiFiClient espClient;
@@ -8,6 +19,18 @@ WiFiClient espClient;
 //MQTT
 PubSubClient client(espClient);
 
+void door_changed(){
+  Serial.println(door_state);
+  if (door_state){
+    client.publish(change_state_topic, "closed");
+    door_state = false;
+  }
+  else {
+    client.publish(change_state_topic, "open");
+    door_state = true;
+  }
+}
+  
 void setup() {
   //Serial Port begin
   Serial.begin (9600);
@@ -28,6 +51,11 @@ void setup() {
 
   //MQTT PUB/SUB
   client.setServer(mqtt_hostname, 1883);
+
+  //Door state change
+  pinMode(button, INPUT_PULLUP);
+  attachInterrupt(button, door_changed, CHANGE);
+  
 }
 
 void connect_mqtt() {
@@ -47,17 +75,19 @@ void connect_mqtt() {
 }
 
 void loop() {
+  unsigned long curr_time = millis();
   if (!client.connected()) {
     connect_mqtt();
   }
   client.loop();
-  client.publish(periodic_topic, "closed");
-  delay(5000);
-
-
-
-
-
-
   
+  if(curr_time - PREV_TIME >= PERIOD) {
+    if(door_state){
+      client.publish(periodic_topic, "open");
+    }
+    else {
+      client.publish(periodic_topic, "closed");
+  }
+  PREV_TIME = curr_time;
+  }
 }
