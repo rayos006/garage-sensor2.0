@@ -80,7 +80,6 @@ void loop() {
     connect_mqtt();
   }
   client.loop();
-  
   if(curr_time - PREV_TIME >= PERIOD) {
     if(door_state){
       client.publish(periodic_topic, "open");

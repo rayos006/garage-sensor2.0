@@ -22,6 +22,7 @@ long duration, inches, distance;
 
 //Door Status
 bool door_status = false;
+bool door_close_sent = true;
 
 //Callback for the garage sensor
 void callback(char *topic, byte *payload, unsigned int length) {
@@ -40,6 +41,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
   }
   else{
     door_status = false;
+    door_close_sent = false;
   }
 }
 
@@ -99,6 +101,13 @@ void loop() {
     char buffer[512];
     size_t n = serializeJson(doc, buffer);
     client.publish(light_topic, buffer, n);
+  }
+  if(!door_close_sent && !door_status){
+    doc["data"] = -1;
+    char buffer[512];
+    size_t n = serializeJson(doc, buffer);
+    client.publish(light_topic, buffer, n);
+    door_close_sent = true;
   }
 }
 
