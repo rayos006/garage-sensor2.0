@@ -18,14 +18,16 @@ WiFiClient espClient;
 
 //MQTT
 PubSubClient client(espClient);
-
+// Runs when pin changes states
 void door_changed(){
-  Serial.println(door_state);
-  if (door_state){
+    Serial.println(door_state);
+  if (digitalRead(button) == 0){
+    // Send closed to MQTT
     client.publish(change_state_topic, "closed");
     door_state = false;
   }
   else {
+    // Send open to MQTT
     client.publish(change_state_topic, "open");
     door_state = true;
   }
